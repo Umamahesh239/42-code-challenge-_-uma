@@ -1,1 +1,39 @@
 
+import csv
+
+def parse_input(file_path):
+    with open(file_path, 'r') as file:
+        reader = csv.reader(file, delimiter='|')
+        headers = next(reader)
+        data = [dict(zip(headers, row)) for row in reader]
+    return headers, data
+def is_total_row(row, properties):
+    return all(row[prop] == '$total' for prop in properties)
+
+def sort_hierarchically(data, properties, metric):
+    def sort_key(row):
+        return [
+            (0 if row[prop] == '$total' else 1, row[prop])
+            for prop in properties
+        ] + [-float(row[metric])]  # Descending order for the metric
+    
+    return sorted(data, key=sort_key)
+
+def write_output(headers, sorted_data, output_path):
+    with open(output_path, 'w', newline='') as file:
+        writer = csv.writer(file, delimiter='|')
+        writer.writerow(headers)
+        for row in sorted_data:
+            writer.writerow([row[header] for header in headers])
+
+# execute the sorting process
+def main(input_file, metric, output_file):
+    headers, data = parse_input(input_file)
+    properties = [header for header in headers if header.startswith('property')]
+    sorted_data = sort_hierarchically(data, properties, metric)
+    write_output(headers, sorted_data, output_file)
+
+# Running the script 
+if __name__ == "__main__":
+    main('data-big-input.txt', 'net_sales_units', 'data-big-output.txt')
+python hierarchical_sort.py data-big-input.txt net_sales_units data-big-output.txt
